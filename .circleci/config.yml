@@ -15,7 +15,7 @@ jobs:
 
       - checkout
 
-      - run: ssh -oStrictHostKeyChecking=no -v $USERNAME@$HOSTNAME "./deploy.sh"
+      - run: maven clean package 
 
 
 # Orchestrate the testwebapp job run sequence (runs only on commit to main branch)
