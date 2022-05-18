@@ -1,39 +1,49 @@
-version: 2.1
-
-
-# Define the jobs for testwebapp (checkout code and run a deploy.sh script)
-
+# Java Maven CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-java/ for more details
+#
+version: 2
 jobs:
-
-  pull-and-build:
-
+  build:
     docker:
+      # specify the version you desire here
+      - image: circleci/openjdk:11-jdk
 
-      - image: arvindr226/alpine-ssh
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/postgres:9.4
+
+    environment:
+      # Customize the JVM maximum heap limit
+      MAVEN_OPTS: -Xmx3200m
 
     steps:
-
       - checkout
 
-      - run: ssh -oStrictHostKeyChecking=no -v $USERNAME@$HOSTNAME "./deploy.sh"
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+         name: Build
+         command: mvn clean package
+      - run:
+         name: Creating Artifacts
+         working_directory: /home/circleci/project/webapp/target/
+         command: |
+           mkdir /tmp/maven
+           cp -r "/home/circleci/project/webapp/target/webapp.war" /tmp/war-app
+
+      - store_artifacts:
+              path: /tmp/war-app
+              destination: war-app
 
 
-# Orchestrate the testwebapp job run sequence (runs only on commit to main branch)
-
-workflows:
-
-  version: 2
-
-  build-project:
-
-    jobs:
-
-      - pull-and-build:
-
-          filters:
-
-            branches:
-
-              only:
-
-                - main
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
